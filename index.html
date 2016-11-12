@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" href="css/index.css">
+</head>
+<body>
+<article class="container">
+    <section>
+        <form action="#" class="form">
+            <input type="text" class="input">
+            <button type="button" class="btn">加密</button>
+        </form>
+    </section>
+    <section class="setting">
+        <label>
+            <input type="radio" name="setting" checked="checked">
+            <span>使用所有算法</span>
+        </label>
+        <label>
+            <input type="radio" name="setting">
+            <span>使用选择算法</span>
+        </label>
+    </section>
+    <section class="content">
+        <div class="tab">
+            <ul class="tab-head clearfix">
+                <li><a href="#Caesar">Caesar</a></li>
+                <li><a href="#Playfair">Playfair</a></li>
+                <li><a href="#Hill">Hill</a></li>
+                <li><a href="#Vigenere">Vigenere</a></li>
+                <li><a href="#S-DES">S-DES</a></li>
+            </ul>
+            <ul class="tab-body">
+                <li id="Caesar">
+                    <ul class="step-list">
+                        <li class="step-item">1</li>
+                        <li class="step-item">1</li>
+                        <li class="step-item">1</li>
+                        <li class="step-item">1</li>
+                        <li class="step-item">1</li>
+                    </ul>
+                </li>
+                <li id="Playfair">2</li>
+                <li id="Hill">3</li>
+                <li id="Vigenere">4</li>
+                <li id="S-DES">5</li>
+            </ul>
+        </div>
+    </section>
+</article>
+<script type="text/javascript" src="js/tab.js"></script>
+<script type="text/javascript" src="js/algorithm.js"></script>
+<script type="text/javascript">
+    window.addEventListener('load', function () {
+        var tab = new Tab('.tab');
+        tab.init();
+        var c = Algorithm.Caesar.lock('z');
+        console.log(Algorithm.Caesar.unlock(c));
+    }, false);
+</script>
+</body>
+</html>
