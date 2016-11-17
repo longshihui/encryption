@@ -4,7 +4,7 @@
  * Date: 2016/11/7
  * Project: encryption
  */
-(function (win) {
+(function (win, Flow) {
     'use strict';
     var UNICODE_A = 'A'.charCodeAt(0),
         UNICODE_Z = 'Z'.charCodeAt(0);
@@ -374,17 +374,55 @@
 
     var SDES = (function () {
         var BINARY_SIZE = 8;
+        var lockFlow = new Flow();
 
         /**
          * 二进制数位数修正
          * @param binaryStr
+         * @param len
          * @private
          */
-        function _fixNnumber(binaryStr) {
-            while (binaryStr.length < BINARY_SIZE) {
+        function _fixNumber(binaryStr, len) {
+            len = len || BINARY_SIZE;
+            while (binaryStr.length < len) {
                 binaryStr = '0' + binaryStr;
             }
             return binaryStr;
+        }
+
+        function sliceToBinaryStrArr(msg) {
+            var charArr = msg.split(''),
+                binaryCharCodeArr;
+
+            binaryCharCodeArr = charArr.map(function (char) {
+                var binary = (char.charCodeAt(0)).toString(2);
+                return _fixNumber(binary);
+            });
+
+            return binaryCharCodeArr;
+        }
+
+        /**
+         * 数组平分
+         * @desc 将数组一分为二
+         * @param binaryArr
+         * @return {{left: (Array.<String>), right: (Array.<String>)}}
+         */
+        function sliceToHalf(binaryArr) {
+            return {
+                left: binaryArr.slice(0, binaryArr.length / 2),
+                right: binaryArr.slice(binaryArr.length / 2)
+            }
+        }
+
+        /**
+         * 转换为Unicode字符
+         * @desc 将二进制的Unicode二进制编码变成Unicode明文
+         * @param binaryCharCodeArr
+         * @return {string}
+         */
+        function translateToChar(binaryCharCodeArr) {
+            return String.fromCharCode(parseInt(binaryCharCodeArr, 2));
         }
 
         var makeKey = (function () {
@@ -394,57 +432,246 @@
              * @return {Array.<String>}
              */
             function moveLeft(keyPart) {
-                keyPart = keyPart.split('');
+                //删除第一位，将第一个元素插入最后一位
+                var first = keyPart.shift();
+                keyPart.push(first);
 
-                //将最后一个元素插入到第一位
-                keyPart.splice(0, 0, keyPart[keyPart.length - 1]);
-
-                //将数组切割到倒数最后一位，并返回
-                return keyPart.slice(0, keyPart.length - 1);
+                return keyPart;
             }
-            return function () {
-                var baseKey = this.setting.keyBinary,
-                    left,
-                    right,
-                    curKeyNum = 0,
-                    maxKeyNum = 2;
 
-                while (curKeyNum < maxKeyNum) {
+            function P10(originKey, P10Setting) {
+                return P10Setting.map(function (i) {
+                    return originKey[i - 1];
+                })
+            }
 
-                    curKeyNum++;
+            function P8(left, right, P8Setting) {
+                var t = left.concat(right);
+                return P8Setting.map(function (i) {
+                    return t[i - 1];
+                })
+            }
+
+            return function (keySetting) {
+                var P10Result = P10(keySetting.origin, keySetting.P10),
+                    left = P10Result.slice(0, keySetting.origin.length / 2),
+                    right = P10Result.slice(keySetting.origin.length / 2),
+                    maxKeyNum = 2,
+                    resultKey = [];
+
+                while (resultKey.length < maxKeyNum) {
+                    //左右部分各自左移一位
+                    left = moveLeft(left);
+                    right = moveLeft(right);
+
+                    resultKey.push(P8(left, right, keySetting.P8));
                 }
 
-                return {
-                    key1: [],
-                    key2: []
-                }
+                return resultKey;
             }
         }());
 
-        function Fk(msg, key) {
-            var result;
-            return result;
+        /**
+         * IP
+         * @param msg
+         * @param IPSetting
+         * @return {Array}
+         */
+        function IP(msg, IPSetting) {
+            return IPSetting.map(function (i) {
+                return msg[i - 1];
+            })
         }
 
         /**
-         * 交换左部分和右部分
-         * @param binaryStr
-         * @return {string}
-         * @constructor
+         * 逆IP
+         * @param msg
+         * @param RIPSetting
+         * @return {Array}
          */
-        function Sw(binaryStr) {
-            return binaryStr.substr(binaryStr.length / 2) + binaryStr.substr(0, binaryStr.length / 2);
+        function reverseIP(msg, RIPSetting) {
+            return RIPSetting.map(function (i) {
+                return msg[i - 1];
+            })
+        }
+
+        var Fk = (function () {
+            var flow = new Flow();
+
+            /**
+             * EP函数
+             * 用于将4位二进制数根据EP指定下标数扩展成8位
+             * @param HalfBinaryCharCodeHArr
+             * @param EP {Array}
+             * @return {Array}
+             */
+            function EP(HalfBinaryCharCodeHArr, EP) {
+                return EP.map(function (i) {
+                    return HalfBinaryCharCodeHArr[i - 1];
+                });
+            }
+
+            /**
+             * S-BOX操作
+             * @param binary4
+             * @param sBox
+             * @return {Array}
+             */
+            function SBox(binary4, sBox) {
+                var rowIndexBinary = '' + binary4[0] + binary4[3],
+                    colIndexBinary = '' + binary4[1] + binary4[2],
+                    rowIndex, colIndex, result;
+
+                rowIndex = parseInt(rowIndexBinary, 2);
+                colIndex = parseInt(colIndexBinary, 2);
+
+                //返回二进制数
+                result = sBox[rowIndex][colIndex].toString(2);
+
+                //对返回结果进行位数修正
+                result = _fixNumber(result, 2);
+
+                return result.split('');
+            }
+            /**
+             * P4
+             * @desc 将S-Box操作的结果合并
+             * @param S1Result
+             * @param S2Result
+             * @param P4Setting
+             * @return {Array}
+             */
+            function P4(S1Result, S2Result, P4Setting) {
+                var t = S1Result.concat(S2Result);
+                return P4Setting.map(function (i) {
+                    return t[i - 1];
+                });
+            }
+
+            /**
+             * 异或
+             * @param binaryArr1
+             * @param binaryArr2
+             * @return {Array.<String>}
+             */
+            function XOR(binaryArr1, binaryArr2) {
+                var s1 = binaryArr1.join(''),
+                    s2 = binaryArr2.join(''),
+                    binaryStr;
+
+                binaryStr = (parseInt(s1, 2) ^ parseInt(s2, 2)).toString(2);
+
+                binaryStr = _fixNumber(binaryStr, 4);
+
+                return binaryStr.split('');
+            }
+
+            return function (binaryCharCodeArr, key, FkSetting) {
+                var origin = sliceToHalf(binaryCharCodeArr),
+                    P4Result, EPResult, tempBinary, S1Result, S2Result;
+
+                EPResult = EP(origin.right, FkSetting.EP);
+
+                //将EP结果和key进行异或,结果为8位二进制数
+                tempBinary = XOR(EPResult, key);
+
+                //将key加密后的密文分成两半
+                tempBinary = sliceToHalf(tempBinary);
+
+                // 分别使用S-BOX进行加密,结果是一个
+                S1Result = SBox(tempBinary.left, FkSetting.S0);
+                S2Result = SBox(tempBinary.right, FkSetting.S1);
+
+                //进行P4步骤,结果是4位二进制数
+                P4Result = P4(S1Result, S2Result, FkSetting.P4);
+
+                //将P4结果与原始信息左半二进制数进行异或,并返回结果
+                tempBinary = XOR(origin.left, P4Result);
+
+                return tempBinary.concat(origin.right);
+            }
+        }());
+
+        /**
+         * 交换左部分和右部分
+         * @param binaryArr
+         * @return {Array}
+         */
+        function Sw(binaryArr) {
+            var r = sliceToHalf(binaryArr);
+            return r.right.concat(r.left);
         }
 
         return {
             setting: {
-                keyBinary: ''
+                key: {
+                    origin: [0, 1, 1, 1, 1, 1, 1, 1, 0, 1],
+                    P10: [3, 5, 2, 7, 4, 10, 1, 9, 8, 6],
+                    P8: [6, 3, 7, 4, 8, 5, 10, 9]
+                },
+                Fk: {
+                    EP: [4, 1, 2, 3, 2, 3, 4, 1],
+                    P4: [2, 4, 3, 1],
+                    S0: [
+                        [1, 0, 3, 2],
+                        [3, 2, 1, 0],
+                        [0, 2, 1, 3],
+                        [3, 1, 3, 2]
+                    ],
+                    S1: [
+                        [0, 1, 2, 3],
+                        [2, 0, 1, 3],
+                        [3, 0, 1, 0],
+                        [2, 1, 0, 3]
+                    ]
+                },
+                IP: [2, 6, 3, 1, 4, 8, 5, 7],
+                rIP: [4, 1, 3, 5, 7, 2, 8, 6]
             },
             lock: function (message) {
-                var keyMap = makeKey.call(this);
+                var setting = this.setting;
+                var keyArr = makeKey(this.setting.key),
+                    binaryMsg = sliceToBinaryStrArr(message);
+
+                binaryMsg = [
+                    [0, 0, 0, 1, 0, 1, 1, 0]
+                ];
+
+                return binaryMsg.map(function (binaryCharCodeArr) {
+                    var tempBinary8;
+
+                    tempBinary8 = IP(binaryCharCodeArr, setting.IP);
+
+                    tempBinary8 = Fk(tempBinary8, keyArr[0], setting.Fk);
+
+                    tempBinary8 = Sw(tempBinary8);
+
+                    tempBinary8 = Fk(tempBinary8, keyArr[1], setting.Fk);
+
+                    tempBinary8 = reverseIP(tempBinary8, setting.rIP);
+
+                    return translateToChar(tempBinary8);
+                }).join('');
             },
             unlock: function (cipher) {
+                var keyMap = makeKey.call(this).reverse(),
+                    binaryMsg = sliceToBinaryStrArr(cipher);
 
+                return binaryMsg.map(function (binaryChar) {
+                    var tempBinary8;
+
+                    tempBinary8 = IP(binaryChar);
+
+                    tempBinary8 = Fk(tempBinary8, keyMap[0]);
+
+                    tempBinary8 = Sw(tempBinary8);
+
+                    tempBinary8 = Fk(tempBinary8, keyMap[1]);
+
+                    tempBinary8 = reverseIP(tempBinary8);
+
+                    return translateToChar(tempBinary8);
+                }).join('');
             }
         }
     }());
@@ -456,4 +683,4 @@
         Vigenere: Vigenere,
         SDES: SDES
     }
-}(window));
+}(window, Flow));

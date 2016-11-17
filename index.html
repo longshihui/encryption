@@ -51,13 +51,16 @@
     </section>
 </article>
 <script type="text/javascript" src="js/tab.js"></script>
+<script type="text/javascript" src="js/Flow.js"></script>
 <script type="text/javascript" src="js/algorithm.js"></script>
+
 <script type="text/javascript">
     window.addEventListener('load', function () {
         var tab = new Tab('.tab');
         tab.init();
-        var c = Algorithm.Caesar.lock('z');
-        console.log(Algorithm.Caesar.unlock(c));
+        var c = Algorithm.Caesar.lock('hello');
+
+        console.log(Algorithm.SDES.lock(''));
     }, false);
 </script>
 </body>
