@@ -1,5 +1,5 @@
 /**
- * File Description
+ * 加密算法类库
  * Author: Colorless.
  * Date: 2016/11/7
  * Project: encryption
@@ -374,7 +374,7 @@
 
     var SDES = (function () {
         var BINARY_SIZE = 8;
-        var lockFlow = new Flow();
+        var lockFlow = new Flow('S-DES');
 
         /**
          * 二进制数位数修正
@@ -496,8 +496,6 @@
         }
 
         var Fk = (function () {
-            var flow = new Flow();
-
             /**
              * EP函数
              * 用于将4位二进制数根据EP指定下标数扩展成8位
@@ -594,7 +592,7 @@
 
         /**
          * 交换左部分和右部分
-         * @param binaryArr
+         * @param binaryArr {Array}
          * @return {Array}
          */
         function Sw(binaryArr) {
