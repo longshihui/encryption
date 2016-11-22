@@ -418,11 +418,14 @@
         /**
          * 转换为Unicode字符
          * @desc 将二进制的Unicode二进制编码变成Unicode明文
-         * @param binaryCharCodeArr
+         * @param {Array} binaryCharCodeArr
          * @return {string}
          */
         function translateToChar(binaryCharCodeArr) {
-            return String.fromCharCode(parseInt(binaryCharCodeArr, 2));
+            var str = binaryCharCodeArr.reduce(function (pre, cur) {
+               return pre + cur;
+            });
+            return String.fromCharCode(parseInt(str, 2));
         }
 
         var makeKey = (function () {
@@ -631,10 +634,6 @@
                 var keyArr = makeKey(this.setting.key),
                     binaryMsg = sliceToBinaryStrArr(message);
 
-                binaryMsg = [
-                    [0, 0, 0, 1, 0, 1, 1, 0]
-                ];
-
                 return binaryMsg.map(function (binaryCharCodeArr) {
                     var tempBinary8;
 
@@ -652,21 +651,22 @@
                 }).join('');
             },
             unlock: function (cipher) {
-                var keyMap = makeKey.call(this).reverse(),
+                var setting = this.setting;
+                var keyArr = makeKey(this.setting.key),
                     binaryMsg = sliceToBinaryStrArr(cipher);
 
-                return binaryMsg.map(function (binaryChar) {
+                return binaryMsg.map(function (binaryCharCodeArr) {
                     var tempBinary8;
 
-                    tempBinary8 = IP(binaryChar);
+                    tempBinary8 = IP(binaryCharCodeArr, setting.IP);
 
-                    tempBinary8 = Fk(tempBinary8, keyMap[0]);
+                    tempBinary8 = Fk(tempBinary8, keyArr[1], setting.Fk);
 
                     tempBinary8 = Sw(tempBinary8);
 
-                    tempBinary8 = Fk(tempBinary8, keyMap[1]);
+                    tempBinary8 = Fk(tempBinary8, keyArr[0], setting.Fk);
 
-                    tempBinary8 = reverseIP(tempBinary8);
+                    tempBinary8 = reverseIP(tempBinary8, setting.rIP);
 
                     return translateToChar(tempBinary8);
                 }).join('');

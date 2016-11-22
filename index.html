@@ -6,48 +6,97 @@
     <link rel="stylesheet" href="css/index.css">
 </head>
 <body>
+<header>
+    <form action="#" class="form">
+        <input type="text" class="input fluid-width-input">
+        <button type="button" class="btn">加密</button>
+    </form>
+</header>
 <article class="container">
-    <section>
-        <form action="#" class="form">
-            <input type="text" class="input">
-            <button type="button" class="btn">加密</button>
-        </form>
-    </section>
-    <section class="setting">
-        <label>
-            <input type="radio" name="setting" checked="checked">
-            <span>使用所有算法</span>
-        </label>
-        <label>
-            <input type="radio" name="setting">
-            <span>使用选择算法</span>
-        </label>
-    </section>
-    <section class="content">
-        <div class="tab">
-            <ul class="tab-head clearfix">
-                <li><a href="#Caesar">Caesar</a></li>
-                <li><a href="#Playfair">Playfair</a></li>
-                <li><a href="#Hill">Hill</a></li>
-                <li><a href="#Vigenere">Vigenere</a></li>
-                <li><a href="#S-DES">S-DES</a></li>
-            </ul>
-            <ul class="tab-body">
-                <li id="Caesar">
-                    <ul class="step-list">
-                        <li class="step-item">1</li>
-                        <li class="step-item">1</li>
-                        <li class="step-item">1</li>
-                        <li class="step-item">1</li>
-                        <li class="step-item">1</li>
-                    </ul>
-                </li>
-                <li id="Playfair">2</li>
-                <li id="Hill">3</li>
-                <li id="Vigenere">4</li>
-                <li id="S-DES">5</li>
-            </ul>
-        </div>
+    <nav class="choose box">
+        <header>
+            选择的算法
+        </header>
+        <ul class="choose-list">
+            <li>
+                Example
+            </li>
+            <li class="active">
+                Example
+            </li>
+            <li>
+                Example
+            </li>
+            <li>
+                Example
+            </li>
+        </ul>
+    </nav>
+    <aside class="setting box">
+        <header>
+            算法设置的参数
+        </header>
+        <ul class="setting-list">
+            <li>
+                <h3 class="setting-name">Example</h3>
+                <p class="setting-detail">
+                    设置具体的值
+                </p>
+            </li>
+            <li>
+                <h3 class="setting-name">Example</h3>
+                <p class="setting-detail">
+                    设置具体的值
+                </p>
+            </li>
+            <li>
+                <h3 class="setting-name">Example</h3>
+                <p class="setting-detail">
+                    设置具体的值
+                </p>
+            </li>
+        </ul>
+    </aside>
+    <section class="content box">
+        <header>加密解密结果</header>
+        <ul class="step-list">
+            <li class="step-item">
+                <h3>步骤</h3>
+                <p class="step-desc">
+                    步骤描述ExampleExampleExampleExampleExample
+                </p>
+                <p class="step-result">
+                    步骤结果ExampleExampleExampleExampleExample
+                </p>
+            </li>
+            <li class="step-item">
+                <h3>步骤</h3>
+                <p class="step-desc">
+                    步骤描述ExampleExampleExampleExampleExample
+                </p>
+                <p class="step-result">
+                    步骤结果ExampleExampleExampleExampleExample
+                </p>
+            </li>
+            <li class="step-item">
+                <h3>步骤</h3>
+                <p class="step-desc">
+                    步骤描述Example Example Example Example Example
+                </p>
+                <p class="step-result">
+                    步骤结果Example Example Example Example Example
+                </p>
+            </li>
+            <li class="step-item">
+                <h3>步骤</h3>
+                <p class="step-desc">
+                    步骤描述Example Example Example Example Example
+                </p>
+                <p class="step-result">
+                    步骤结果Example Example Example Example Example
+                </p>
+            </li>
+        </ul>
     </section>
 </article>
 <script type="text/javascript" src="js/tab.js"></script>
@@ -57,38 +106,10 @@
 
 <script type="text/javascript">
     window.addEventListener('load', function () {
-        var tab = new Tab('.tab');
-        tab.init();
+        var c = Algorithm.SDES.lock('');
 
-        var f = new Flow('test');
+        console.log(Algorithm.SDES.unlock(c));
 
-        f.defineTasks({
-            1: {
-                fn: function () {
-                    return 1 + 2;
-                }
-            },
-            2: {
-                fn: function (pre) {
-                    console.log("I receive preResult is " + pre);
-                }
-            }
-        });
-
-        var A = function () {
-        };
-
-        A.prototype = Object.create(Pubsub.Observer.prototype);
-
-        A.prototype.receive = function (msg) {
-            console.log('I receive message from listen that is ' + msg.name);
-        };
-
-        var a = new A();
-
-        Flow.subscribe('test', a);
-
-        f.execute();
     }, false);
 </script>
 </body>
