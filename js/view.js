@@ -7,6 +7,23 @@
 var view = (function (win, Flow, Algorithm, Pubsub, template) {
     'use strict';
     var pageInitFlow = new Flow('page-init');
+    
+    template.helper('dataFormat', function (data) {
+        var result = '';
+        if (Array.isArray(data) ) {
+            if (Array.isArray(data[0])) {
+                result = data.map(function (v) {
+                    return v.join(', ')
+                }).join('<br />');
+                result = '<br />' + result;
+            } else {
+                result = '[' + data.join(', ') +']'
+            }
+        } else {
+            result = data.toString();
+        }
+        return result;
+    });
 
     var Observer = function () {
         this.lockCache = [];
@@ -122,6 +139,9 @@ var view = (function (win, Flow, Algorithm, Pubsub, template) {
                     title: '加密',
                     stepList: data.lock
                 });
+
+                console.log(lockHtml);
+
                 var unlockHtml = template('step-content-template', {
                     title: '解密',
                     stepList: data.unlock

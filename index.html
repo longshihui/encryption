@@ -67,7 +67,7 @@
                             描述：{{step.desc}}
                         </p>
                         <p class="step-result">
-                            步骤结果：{{step.result}}
+                            步骤结果：{{#dataFormat(step.result)}}
                         </p>
                     </li>
                     {{/each}}
