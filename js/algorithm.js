@@ -9,6 +9,9 @@
     var UNICODE_A = 'A'.charCodeAt(0),
         UNICODE_Z = 'Z'.charCodeAt(0);
     var Caesar = (function () {
+        var lockFlow = new Flow('Caesar:lock');
+        var unlockFlow = new Flow('Caesar:unlock');
+
         function translate(msg, key) {
             msg = msg.toUpperCase().split('');
             return msg.map(function (val) {
@@ -18,13 +21,55 @@
             }).join('');
         }
 
+        lockFlow.defineTasks({
+            'readMessage': {
+                desc: '输入的明文',
+                body: function (message) {
+                    return message;
+                }
+            },
+            'lock': {
+                desc: '根据秘钥移位加密',
+                body: function (message, reMap, setting) {
+                    return translate(message, setting.key);
+                }
+            }
+        });
+
+        unlockFlow.defineTasks({
+            'readCipher': {
+                desc: '输入的密文',
+                body: function (cipher) {
+                    return cipher;
+                }
+            },
+            'unlock': {
+                desc: '根据秘钥解密',
+                body: function (cipher, reMap, setting) {
+                    return translate(cipher, setting.key)
+                }
+            }
+        });
+
         return {
-            key: 5,
+            setting: {
+                key: 5
+            },
             lock: function (message) {
-                return translate(message, this.key);
+                return lockFlow.execute(message, {
+                    'lock': {
+                        key: this.setting.key
+                    }
+                });
+                // return translate(message, this.setting.key);
             },
             unlock: function (cipher) {
-                return translate(cipher, -this.key);
+                return unlockFlow.execute(cipher, {
+                    'unlock': {
+                        key: -this.setting.key
+                    }
+                });
+                // return translate(cipher, -this.setting.key);
             }
         }
     }());
@@ -192,21 +237,17 @@
         }
 
         return {
-            key: 'monarchy',
+            setting: {
+                key: 'monarchy'
+            },
             lock: function (message) {
-                if (!message) {
-                    return "";
-                }
                 message = fixMsg(message);
-                var matrix = makeKey(this.key);
+                var matrix = makeKey(this.setting.key);
                 return changeCipher(message, matrix);
             },
             unlock: function (cipher) {
-                if (!cipher) {
-                    return "";
-                }
                 cipher = fixMsg(cipher);
-                var matrix = makeKey(this.key);
+                var matrix = makeKey(this.setting.key);
                 return changeMsg(cipher, matrix);
             }
         }
@@ -214,7 +255,6 @@
 
     var Hill = (function () {
         var FIX_CHAR = 'X';
-        var UNICODE_A = 'A'.charCodeAt(0);
 
         /**
          * 填充明文数据
@@ -282,9 +322,7 @@
             return result;
         }
 
-        function translate(message, matrixKey) {
-            var messageMatrix = fix(message, matrixKey);
-
+        function translate(messageMatrix, matrixKey) {
             return matrixMultiply(messageMatrix, matrixKey).map(function (rows) {
                 return rows.map(function (charCode) {
                     return String.fromCharCode(UNICODE_A + charCode);
@@ -293,45 +331,46 @@
         }
 
         return {
-            //矩阵
-            key: [
-                [17, 17, 5],
-                [21, 18, 21],
-                [2, 2, 19]
-            ],
-            //逆矩阵
-            ukey: [
-                [4, 9, 15],
-                [15, 17, 6],
-                [24, 0, 17]
-            ],
+            setting: {
+                //矩阵
+                key: [
+                    [17, 17, 5],
+                    [21, 18, 21],
+                    [2, 2, 19]
+                ],
+                //逆矩阵
+                ukey: [
+                    [4, 9, 15],
+                    [15, 17, 6],
+                    [24, 0, 17]
+                ]
+            },
             lock: function (message) {
-                var key = this.key;
-
-                return translate(message, key);
+                var key = this.setting.key;
+                var messageMatrix = fix(message, key);
+                return translate(messageMatrix, key);
             },
             unlock: function (cipher) {
-                var ukey = this.ukey;
-
-                return translate(cipher, ukey);
+                var ukey = this.setting.ukey;
+                var cipherMatrix = fix(cipher, ukey);
+                return translate(cipherMatrix, ukey);
             }
         }
     }());
 
     var Vigenere = (function () {
-        var BASE_CHAR_CODE = 'A'.charCodeAt(0);
 
         function fix(msg) {
             return msg.toUpperCase().replace(/\s+/g, '').split('').map(function (char) {
-                return char.charCodeAt(0) - BASE_CHAR_CODE;
+                return char.charCodeAt(0) - UNICODE_A;
             });
         }
 
-        function makeKey(msgLen) {
-            var key = this.key.toUpperCase();
+        function makeKey(msgLen, setting) {
+            var key = setting.key.toUpperCase();
 
             key = key.split('').map(function (char) {
-                return char.charCodeAt(0) - BASE_CHAR_CODE;
+                return char.charCodeAt(0) - UNICODE_A;
             });
 
             while (key.length < msgLen) {
@@ -351,17 +390,21 @@
 
                 t = t < 0 ? (26 + t) : t;
 
-                result = String.fromCharCode(t % 26 + BASE_CHAR_CODE);
+                result = String.fromCharCode(t % 26 + UNICODE_A);
 
                 return result;
             }).join('');
         }
 
         return {
-            key: 'deceptive',
+            setting: {
+                key: 'deceptive'
+            },
             lock: function (message) {
+                var key;
                 message = fix(message);
-                return translate(message, makeKey.call(this, message.length));
+                key = makeKey(message.length, this.setting);
+                return translate(message, key);
             },
             unlock: function (cipher) {
                 var key = makeKey.call(this, cipher.length).map(function (charCode) {
@@ -423,7 +466,7 @@
          */
         function translateToChar(binaryCharCodeArr) {
             var str = binaryCharCodeArr.reduce(function (pre, cur) {
-               return pre + cur;
+                return pre + cur;
             });
             return String.fromCharCode(parseInt(str, 2));
         }
@@ -534,6 +577,7 @@
 
                 return result.split('');
             }
+
             /**
              * P4
              * @desc 将S-Box操作的结果合并

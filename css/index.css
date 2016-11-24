@@ -77,12 +77,16 @@ a {
     flex: 3;
     order: 2;
 
+    min-height: 300px;
+
     margin: 0 10px;
 }
 
 .container .setting {
     flex: 1;
     order: 3;
+
+    min-height: 100px;
 
     margin: 0 10px;
 }
@@ -130,6 +134,10 @@ a {
     width: 18px;
     height: 18px;
     background: url("../svg/tick.svg");
+}
+
+.container .content .step-body > .wrapper .head{
+    text-align: center;
 }
 
 .form {

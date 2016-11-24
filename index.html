@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>Title</title>
     <link rel="stylesheet" href="css/index.css">
+    <script src="js/arttemplate.js" type="text/javascript"></script>
 </head>
 <body>
 <header>
@@ -17,100 +18,115 @@
         <header>
             选择的算法
         </header>
-        <ul class="choose-list">
-            <li>
-                Example
+        <script type="text/html" id="algorithm-names-template">
+            {{each names as name}}
+            <li data-name="{{name}}">
+                {{name}}
             </li>
-            <li class="active">
-                Example
-            </li>
-            <li>
-                Example
-            </li>
-            <li>
-                Example
-            </li>
-        </ul>
+            {{/each}}
+        </script>
+        <ul class="choose-list"></ul>
     </nav>
     <aside class="setting box">
         <header>
             算法设置的参数
         </header>
-        <ul class="setting-list">
-            <li>
-                <h3 class="setting-name">Example</h3>
-                <p class="setting-detail">
-                    设置具体的值
-                </p>
-            </li>
-            <li>
-                <h3 class="setting-name">Example</h3>
-                <p class="setting-detail">
-                    设置具体的值
-                </p>
-            </li>
-            <li>
-                <h3 class="setting-name">Example</h3>
-                <p class="setting-detail">
-                    设置具体的值
-                </p>
-            </li>
-        </ul>
+        <div class="setting-body">
+            <ul class="setting-list">
+                <li>
+                    <h3 class="setting-name">Example</h3>
+                    <p class="setting-detail">
+                        设置具体的值
+                    </p>
+                </li>
+                <li>
+                    <h3 class="setting-name">Example</h3>
+                    <p class="setting-detail">
+                        设置具体的值
+                    </p>
+                </li>
+                <li>
+                    <h3 class="setting-name">Example</h3>
+                    <p class="setting-detail">
+                        设置具体的值
+                    </p>
+                </li>
+            </ul>
+        </div>
     </aside>
     <section class="content box">
         <header>加密解密结果</header>
-        <ul class="step-list">
-            <li class="step-item">
-                <h3>步骤</h3>
-                <p class="step-desc">
-                    步骤描述ExampleExampleExampleExampleExample
-                </p>
-                <p class="step-result">
-                    步骤结果ExampleExampleExampleExampleExample
-                </p>
-            </li>
-            <li class="step-item">
-                <h3>步骤</h3>
-                <p class="step-desc">
-                    步骤描述ExampleExampleExampleExampleExample
-                </p>
-                <p class="step-result">
-                    步骤结果ExampleExampleExampleExampleExample
-                </p>
-            </li>
-            <li class="step-item">
-                <h3>步骤</h3>
-                <p class="step-desc">
-                    步骤描述Example Example Example Example Example
-                </p>
-                <p class="step-result">
-                    步骤结果Example Example Example Example Example
-                </p>
-            </li>
-            <li class="step-item">
-                <h3>步骤</h3>
-                <p class="step-desc">
-                    步骤描述Example Example Example Example Example
-                </p>
-                <p class="step-result">
-                    步骤结果Example Example Example Example Example
-                </p>
-            </li>
-        </ul>
+        <script type="text/html" id="step-content-template">
+            <div class="wrapper">
+                <h3 class="head">{{title}}</h3>
+                <ul class="step-list">
+                    {{each stepList as step index}}
+                    <li class="step-item">
+                        <h3>{{index + 1}}.{{step.name}}</h3>
+                        <p class="step-desc">
+                            描述：{{step.desc}}
+                        </p>
+                        <p class="step-result">
+                            步骤结果：{{step.result}}
+                        </p>
+                    </li>
+                    {{/each}}
+                </ul>
+            </div>
+        </script>
+        <div class="step-body">
+            <div class="unlock">
+                <h3 class="head">解密</h3>
+                <ul class="step-list">
+                    <li class="step-item">
+                        <h3>步骤</h3>
+                        <p class="step-desc">
+                            步骤描述ExampleExampleExampleExampleExample
+                        </p>
+                        <p class="step-result">
+                            步骤结果ExampleExampleExampleExampleExample
+                        </p>
+                    </li>
+                    <li class="step-item">
+                        <h3>步骤</h3>
+                        <p class="step-desc">
+                            步骤描述ExampleExampleExampleExampleExample
+                        </p>
+                        <p class="step-result">
+                            步骤结果ExampleExampleExampleExampleExample
+                        </p>
+                    </li>
+                    <li class="step-item">
+                        <h3>步骤</h3>
+                        <p class="step-desc">
+                            步骤描述Example Example Example Example Example
+                        </p>
+                        <p class="step-result">
+                            步骤结果Example Example Example Example Example
+                        </p>
+                    </li>
+                    <li class="step-item">
+                        <h3>步骤</h3>
+                        <p class="step-desc">
+                            步骤描述Example Example Example Example Example
+                        </p>
+                        <p class="step-result">
+                            步骤结果Example Example Example Example Example
+                        </p>
+                    </li>
+                </ul>
+            </div>
+
+        </div>
     </section>
 </article>
-<script type="text/javascript" src="js/tab.js"></script>
 <script type="text/javascript" src="js/Pubsub.js"></script>
 <script type="text/javascript" src="js/Flow.js"></script>
 <script type="text/javascript" src="js/algorithm.js"></script>
+<script type="text/javascript" src="js/view.js"></script>
 
 <script type="text/javascript">
-    window.addEventListener('load', function () {
-        var c = Algorithm.SDES.lock('');
-
-        console.log(Algorithm.SDES.unlock(c));
-
-    }, false);
+    view.init();
 </script>
 </body>
 </html>

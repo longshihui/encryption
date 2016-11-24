@@ -56,6 +56,12 @@
         delete FlowMap[name];
     };
 
+    /**
+     * 订阅
+     * @static
+     * @param name
+     * @param observer
+     */
     Flow.subscribe = function (name, observer) {
         var flow = null;
         //查找指定名字的工作流
@@ -81,7 +87,7 @@
         this.tasks.push({
             name: task.name || '',
             desc: task.desc || '',
-            fn: task.fn || function () {
+            body: task.body || function () {
             }
         })
     };
@@ -96,28 +102,39 @@
             that.defineTask({
                 name: taskName,
                 desc: tasks[taskName].desc,
-                fn: tasks[taskName].fn
+                body: tasks[taskName].body
             })
         });
     };
 
     /**
      * 执行任务
+     * @param initial
+     * @param {*} params
      */
-    Flow.prototype.execute = function () {
+    Flow.prototype.execute = function (initial, params) {
+        params = params || {};
         var tasks = this.tasks,
             self = this,
-            previousTaskResult;
+            resultMap = {},
+            previousTaskResult = initial;
         tasks.forEach(function (task) {
-            previousTaskResult = task.fn.call(null, previousTaskResult);
+            previousTaskResult = task.body.apply(null, [previousTaskResult, resultMap, params[task.name]]);
+            resultMap[task.name] = previousTaskResult;
             self.publish({
                 name: task.name,
                 desc: task.desc,
-                result: previousTaskResult
+                result: previousTaskResult,
+                resultSMap: resultMap
             });
-        })
-    };
+        });
 
+        return previousTaskResult;
+    };
+    /**
+     * 实例订阅
+     * @param observer
+     */
     Flow.prototype.subscribe = function (observer) {
         Flow.super.subscribe.call(this, observer);
     };
