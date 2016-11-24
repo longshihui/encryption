@@ -8,6 +8,7 @@
     'use strict';
     var UNICODE_A = 'A'.charCodeAt(0),
         UNICODE_Z = 'Z'.charCodeAt(0);
+
     var Caesar = (function () {
         var lockFlow = new Flow('Caesar:lock');
         var unlockFlow = new Flow('Caesar:unlock');
@@ -61,7 +62,6 @@
                         key: this.setting.key
                     }
                 });
-                // return translate(message, this.setting.key);
             },
             unlock: function (cipher) {
                 return unlockFlow.execute(cipher, {
@@ -69,13 +69,15 @@
                         key: -this.setting.key
                     }
                 });
-                // return translate(cipher, -this.setting.key);
             }
         }
     }());
+
     var Playfair = (function () {
         var FUZZY_KEY = 'J';
         var FIX_KEY = 'X';
+        var lockFlow = new Flow('Playfair:lock');
+        var unlockFlow = new Flow('Playfair:unlock');
 
         /**
          * 生成秘钥
@@ -236,25 +238,81 @@
             }).join('');
         }
 
+        lockFlow.defineTasks({
+            'readMessage': {
+                desc: '读入明文',
+                body: function (message) {
+                    return message;
+                }
+            },
+            'fixMsg': {
+                desc: '对明文进行补位,使其变成偶数位',
+                body: function (message) {
+                    return fixMsg(message)
+                }
+            },
+            'makeKey': {
+                desc: '生成密钥矩阵',
+                body: function (fixMsg, reMap, setting) {
+                    return makeKey(setting.key);
+                }
+            },
+            'lock': {
+                desc: '对明文进行加密',
+                body: function (matrix, reMap) {
+                    return changeCipher(reMap.fixMsg, matrix);
+                }
+            }
+        });
+
+        unlockFlow.defineTasks({
+            'readCipher': {
+                desc: '读入密文',
+                body: function (message) {
+                    return message;
+                }
+            },
+            'fixMsg': {
+                desc: '对密文进行补位,使其变成偶数位',
+                body: function (message) {
+                    return fixMsg(message)
+                }
+            },
+            'makeKey': {
+                desc: '生成密钥矩阵',
+                body: function (fixMsg, reMap, setting) {
+                    return makeKey(setting.key);
+                }
+            },
+            'unlock': {
+                desc: '对密文进行解密',
+                body: function (matrix, reMap) {
+                    return changeMsg(reMap.fixMsg, matrix);
+                }
+            }
+        });
+
         return {
             setting: {
                 key: 'monarchy'
             },
             lock: function (message) {
-                message = fixMsg(message);
-                var matrix = makeKey(this.setting.key);
-                return changeCipher(message, matrix);
+                return lockFlow.execute(message, {
+                    makeKey: this.setting
+                });
             },
             unlock: function (cipher) {
-                cipher = fixMsg(cipher);
-                var matrix = makeKey(this.setting.key);
-                return changeMsg(cipher, matrix);
+                return unlockFlow.execute(cipher, {
+                    makeKey: this.setting
+                })
             }
         }
     }());
 
     var Hill = (function () {
         var FIX_CHAR = 'X';
+        var lockFlow = new Flow('Hill:lock');
+        var unlockFlow = new Flow('Hill:unlock');
 
         /**
          * 填充明文数据
@@ -330,6 +388,48 @@
             }).join('');
         }
 
+        lockFlow.defineTasks({
+            'readMessage': {
+                desc: '读入明文',
+                body: function (message) {
+                    return message;
+                }
+            },
+            'fix': {
+                desc: '填充数据,将其转换为明文矩阵',
+                body: function (message, reMap, setting) {
+                    return fix(message, setting.key)
+                }
+            },
+            'translate': {
+                desc: '对明文进行加密',
+                body: function (msgMatrix, reMap, setting) {
+                    return translate(msgMatrix, setting.key)
+                }
+            }
+        });
+
+        unlockFlow.defineTasks({
+            'readCipher': {
+                desc: '读入明文',
+                body: function (message) {
+                    return message;
+                }
+            },
+            'fix': {
+                desc: '填充数据,将其转换为密文矩阵',
+                body: function (message, reMap, setting) {
+                    return fix(message, setting.ukey)
+                }
+            },
+            'translate': {
+                desc: '对密文进行解密',
+                body: function (msgMatrix, reMap, setting) {
+                    return translate(msgMatrix, setting.ukey)
+                }
+            }
+        });
+
         return {
             setting: {
                 //矩阵
@@ -346,19 +446,23 @@
                 ]
             },
             lock: function (message) {
-                var key = this.setting.key;
-                var messageMatrix = fix(message, key);
-                return translate(messageMatrix, key);
+                return lockFlow.execute(message, {
+                    'fix': this.setting,
+                    'translate': this.setting
+                })
             },
             unlock: function (cipher) {
-                var ukey = this.setting.ukey;
-                var cipherMatrix = fix(cipher, ukey);
-                return translate(cipherMatrix, ukey);
+                return unlockFlow.execute(cipher, {
+                    'fix': this.setting,
+                    'translate': this.setting
+                })
             }
         }
     }());
 
     var Vigenere = (function () {
+        var lockFlow = new Flow('Vigenere:lock');
+        var unlockFlow = new Flow('Vigenere:unlock');
 
         function fix(msg) {
             return msg.toUpperCase().replace(/\s+/g, '').split('').map(function (char) {
@@ -366,8 +470,8 @@
             });
         }
 
-        function makeKey(msgLen, setting) {
-            var key = setting.key.toUpperCase();
+        function makeKey(msgLen, keyWord) {
+            var key = keyWord.toUpperCase();
 
             key = key.split('').map(function (char) {
                 return char.charCodeAt(0) - UNICODE_A;
@@ -396,28 +500,89 @@
             }).join('');
         }
 
+        lockFlow.defineTasks({
+            'readMessage': {
+                desc: '读入明文',
+                body: function (msg) {
+                    return msg;
+                }
+            },
+            'fix': {
+                desc: '对明文进行补位',
+                body: function (msg) {
+                    return fix(msg);
+                }
+            },
+            'makeKey': {
+                desc: '根据明文长度和指定密钥单词生成密钥',
+                body: function (msg, reMap, setting) {
+                    return makeKey(msg.length, setting.key);
+                }
+            },
+            'translate': {
+                desc: '加密明文',
+                body: function (key, reMap) {
+                    return translate(reMap.fix, key);
+                }
+            }
+        });
+
+        unlockFlow.defineTasks({
+            'readCipher': {
+                desc: '读入密文',
+                body: function (cipher) {
+                    return cipher;
+                }
+            },
+            'fix': {
+                desc: '对密文进行补位',
+                body: function (cipher) {
+                    return fix(cipher);
+                }
+            },
+            'makeKey': {
+                desc: '根据密文长度和指定密钥单词生成密钥',
+                body: function (cipher, reMap, setting) {
+                    return makeKey(cipher.length, setting.key);
+                }
+            },
+            'reverseKeyTableCode': {
+                desc: '将生成的密钥列表值取反，以便加密',
+                body: function (keyTable) {
+                    return keyTable.map(function (code) {
+                        return -code;
+                    })
+                }
+            },
+            'translate': {
+                desc: '解密密钥',
+                body: function (keyTable, reMap) {
+                    return translate(reMap.fix, keyTable);
+                }
+            }
+        });
+
         return {
             setting: {
                 key: 'deceptive'
             },
             lock: function (message) {
-                var key;
-                message = fix(message);
-                key = makeKey(message.length, this.setting);
-                return translate(message, key);
+                return lockFlow.execute(message, {
+                    'makeKey': this.setting
+                })
             },
             unlock: function (cipher) {
-                var key = makeKey.call(this, cipher.length).map(function (charCode) {
-                    return -charCode;
-                });
-                return translate(fix(cipher), key);
+                return unlockFlow.execute(cipher, {
+                    'makeKey': this.setting
+                })
             }
         }
     }());
 
     var SDES = (function () {
         var BINARY_SIZE = 8;
-        var lockFlow = new Flow('S-DES');
+        var lockFlow = new Flow('SDES:lock');
+        var unlockFlow = new Flow('SDES:unlock');
 
         /**
          * 二进制数位数修正
@@ -647,6 +812,92 @@
             return r.right.concat(r.left);
         }
 
+        lockFlow.defineTasks({
+            'readMessage': {
+                desc: '读入明文',
+                body: function (message) {
+                    return message;
+                }
+            },
+            'toBinaryMessage': {
+                desc: '将数据按每字符进行分割，并且将其对应的Unicode编码变成二进制',
+                body: function (message) {
+                    return sliceToBinaryStrArr(message);
+                }
+            },
+            'makeKey': {
+                desc: '根据Key的相关设置生成密钥',
+                body: function (message, reMap, setting) {
+                    return makeKey(setting.key);
+                }
+            },
+            'translate': {
+                desc: '将字符二进制编码数组进行加密，返回加密后的字符串',
+                body: function (key, reMap, setting) {
+                    var binaryMsg = reMap.toBinaryMessage;
+
+                    return binaryMsg.map(function (binaryCharCodeArr) {
+                        var tempBinary8;
+
+                        tempBinary8 = IP(binaryCharCodeArr, setting.IP);
+
+                        tempBinary8 = Fk(tempBinary8, key[0], setting.Fk);
+
+                        tempBinary8 = Sw(tempBinary8);
+
+                        tempBinary8 = Fk(tempBinary8, key[1], setting.Fk);
+
+                        tempBinary8 = reverseIP(tempBinary8, setting.rIP);
+
+                        return translateToChar(tempBinary8);
+                    }).join('');
+                }
+            }
+        });
+
+        unlockFlow.defineTasks({
+            'readCipher': {
+                desc: '读入密文',
+                body: function (message) {
+                    return message;
+                }
+            },
+            'toBinaryCipher': {
+                desc: '将数据按每字符进行分割，并且将其对应的Unicode编码变成二进制',
+                body: function (cipher) {
+                    return sliceToBinaryStrArr(cipher);
+                }
+            },
+            'makeKey': {
+                desc: '根据Key的相关设置生成密钥',
+                body: function (cipher, reMap, setting) {
+                    return makeKey(setting.key);
+                }
+            },
+            'translate': {
+                desc: '将字符二进制编码数组进行加密，返回加密后的字符串',
+                body: function (key, reMap, setting) {
+                    var binaryMsg = reMap.toBinaryCipher;
+
+                    return binaryMsg.map(function (binaryCharCodeArr) {
+                        var tempBinary8;
+
+                        tempBinary8 = IP(binaryCharCodeArr, setting.IP);
+
+                        tempBinary8 = Fk(tempBinary8, key[1], setting.Fk);
+
+                        tempBinary8 = Sw(tempBinary8);
+
+                        tempBinary8 = Fk(tempBinary8, key[0], setting.Fk);
+
+                        tempBinary8 = reverseIP(tempBinary8, setting.rIP);
+
+                        return translateToChar(tempBinary8);
+                    }).join('');
+                }
+            }
+        });
+
         return {
             setting: {
                 key: {
@@ -674,46 +925,16 @@
                 rIP: [4, 1, 3, 5, 7, 2, 8, 6]
             },
             lock: function (message) {
-                var setting = this.setting;
-                var keyArr = makeKey(this.setting.key),
-                    binaryMsg = sliceToBinaryStrArr(message);
-
-                return binaryMsg.map(function (binaryCharCodeArr) {
-                    var tempBinary8;
-
-                    tempBinary8 = IP(binaryCharCodeArr, setting.IP);
-
-                    tempBinary8 = Fk(tempBinary8, keyArr[0], setting.Fk);
-
-                    tempBinary8 = Sw(tempBinary8);
-
-                    tempBinary8 = Fk(tempBinary8, keyArr[1], setting.Fk);
-
-                    tempBinary8 = reverseIP(tempBinary8, setting.rIP);
-
-                    return translateToChar(tempBinary8);
-                }).join('');
+                return lockFlow.execute(message, {
+                    'makeKey': this.setting,
+                    'translate': this.setting
+                })
             },
             unlock: function (cipher) {
-                var setting = this.setting;
-                var keyArr = makeKey(this.setting.key),
-                    binaryMsg = sliceToBinaryStrArr(cipher);
-
-                return binaryMsg.map(function (binaryCharCodeArr) {
-                    var tempBinary8;
-
-                    tempBinary8 = IP(binaryCharCodeArr, setting.IP);
-
-                    tempBinary8 = Fk(tempBinary8, keyArr[1], setting.Fk);
-
-                    tempBinary8 = Sw(tempBinary8);
-
-                    tempBinary8 = Fk(tempBinary8, keyArr[0], setting.Fk);
-
-                    tempBinary8 = reverseIP(tempBinary8, setting.rIP);
-
-                    return translateToChar(tempBinary8);
-                }).join('');
+               return unlockFlow.execute(cipher, {
+                   'makeKey': this.setting,
+                   'translate': this.setting
+               })
             }
         }
     }());

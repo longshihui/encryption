@@ -109,30 +109,6 @@ var view = (function (win, Flow, Algorithm, Pubsub, template) {
     var Content = (function () {
         var stepBody;
 
-        var WRAPPER_HTML = '<div class="wrapper">' +
-            '<h3 class="head">{operation}</h3>' +
-            '<ul class="step-list">' +
-            '{body}' +
-            '</ul>' +
-            '</div>';
-
-        var ITEM_HTML = '<li class="step-item">' +
-            '<h3>{step-name}</h3>' +
-            '<p class="step-desc">' +
-            '{step-desc}' +
-            '</p>' +
-            '<p class="step-result">' +
-            '{step-result}' +
-            '</p>' +
-            '</li>';
-
-        function render(data) {
-            Object.keys(data).forEach(function (op) {
-                var arr = data[op];
-                var t = WRAPPER_HTML.replace('{operation}', op);
-            })
-        }
-
         return {
             init: function (elem) {
                 stepBody = elem;
